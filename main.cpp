@@ -53,11 +53,14 @@ void find_starts_with(const string &target, string &text){
 }
 
 void _1(){
-	string text = "hello, ,,   friend,        hellohello, fries ,,  fr, fri, efri";
+	string text = "hello, friend,  hellohello, fries , fr, fri, efri";
 	string target = "fri";
+    cout << "Text:\n" << text << endl;
+    cout << "Answer:\n";
 	find_starts_with(target, text);
 }
 /////////////////////////////////// 2 номер //////////////////////////////////////
+
 #define SIZE 128
 
 int* bad_char(const string &target){
@@ -96,44 +99,55 @@ int* good_suffix(const string &target){
 	int* table = new int[target.size()];
 	int lastPrefixPosition = target.size();
 	for (int i=target.size()-1; i>=0; i--){
-		// Если подстрока x[i+1..m-1] является префиксом, то запомним её начало
 		if (is_prefix(target, i + 1))
 			lastPrefixPosition = i + 1;
 		table[target.size() - 1 - i] = lastPrefixPosition - i + target.size() - 1;
 	}
-	// Вычисление функции по определению
-	for (int i=0; i<=target.size()-2; i++){
+
+    for (int i=0; i<=target.size()-2; i++){
 		int slen = suffix_length(target, i);
 		table[slen] = target.size() - 1 - i + slen;
 	}
 	return table;
 }
 
-/*
- *   function BM(char[n] y, char[m] x): vector <int>
-     vector <int> answer // вектор, содержащий все вхождения подстроки в строку
-     if m == 0
-        answer.pushBack(-1) // Искомая подстрока является пустой
-        return answer
+vector<int> TBM(const string &text, const string &target){
+    int i = 0;
+    int u = 0;
+    int shift = text.size();
+    vector<int> answer;
+    int* bc = bad_char(target);
+    int* gs = good_suffix(target);
 
-     // Предварительные вычисления
-     int[ |Σ| ] bmBc = preBmBc(x)
-     int[m] bmGs = preBmGs(x)
-
-     // Поиск подстроки
-     for i = m - 1 .. n - 1
-        int j = m - 1
-        while x[j] == y[i]
-           if j == 0
-              answer.pushBack(i) // Найдена подстрока в позиции i
-           --i
-           --j
-        i += max(bmGs[m - 1 - j], bmBc[y[i]])
-     if (answer == ∅)
-        answer.pushBack(-1) // Искомая подстрока не найдена
-     return answer
- */
-
+    while (i <= text.size() - target.size()){
+        int j = target.size() - 1;
+        while (j >= 0 && target[j] == text[i + j]){
+            --j;
+            if (u != 0 && j == target.size() - 1 - shift)
+                j -= u;
+        }
+        if (j < 0){
+            answer.push_back(i);
+            shift = gs[0];
+            u = target.size() - shift;
+        }
+        else{
+            int v = target.size() - 1 - j;
+            int turboShift = u - v;
+            int bCShift = bc[text[i + j]] - target.size() + j + 1;
+            shift = max(max(turboShift,bCShift), gs[j + 1]);
+            if (shift == gs[j + 1])
+                target.size() - shift > 0 ? u = shift : u = target.size();
+            else {
+                if (turboShift < bCShift)
+                    shift = min(shift, (u + 1));
+                u = 0;
+            }
+        }
+        i += shift;
+    }
+    return answer;
+}
 
 vector<int> BM(const string &text,const string &target){
 	vector<int> answer;
@@ -175,15 +189,15 @@ void _2(){
 	string target;
 	string text;
 	get_data(text, target);
-	vector<int> ans = BM(text, target);
-	cout << ans.size() << endl;
+	vector<int> ans = TBM(text, target);
+	//cout << ans.size() << endl;
 	for (int i=0; i<ans.size(); i++){
 		cout << ans[i] << endl;
 	}
 }
 
 int main(){
-//	_1();
-	_2();
+	_1();
+//	_2();
 	return 0;
 }
